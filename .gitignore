@@ -1,4 +1,4 @@
 .idea/
 *.pyc
-*.*.pyc
+src/__pycache__/*
 mop.txt
