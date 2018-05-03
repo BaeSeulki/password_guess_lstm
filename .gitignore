@@ -1,4 +1,3 @@
 .idea/
-/dictionary/*
-/data/*
 *.pyc
+mop.txt
