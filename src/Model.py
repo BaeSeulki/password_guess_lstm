@@ -9,21 +9,25 @@ class Model(object):
         vocab_size = config.vocab_size
         self.lr = config.learning_rate
 
-        self._input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
+        self._input_data = tf.placeholder(tf.int32, shape=[batch_size, num_steps])
         self._targets = tf.placeholder(tf.int32, [batch_size, num_steps])  # 声明输入变量x, y
 
-        lstm_cell = tf.contrib.rnn.BasicLSTMCell(size, forget_bias=0.0, state_is_tuple=False)
-        if is_training and config.keep_prob < 1:
-            lstm_cell = tf.contrib.rnn.DropoutWrapper(
-                lstm_cell, output_keep_prob=config.keep_prob)
-        cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * config.num_layers, state_is_tuple=False)
+        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(size, forget_bias=0.0, state_is_tuple=True)
 
+        # 训练的时候使用dropout
+        if is_training and config.keep_prob < 1:
+            lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=config.keep_prob)
+
+        cell = lstm_cell
+        if config.num_layers > 1:
+            cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * config.num_layers, state_is_tuple=True)
+
+        # initial states，全部赋值为0状态
         self._initial_state = cell.zero_state(batch_size, tf.float32)
 
-        with tf.device("/cpu:0"):
-            embedding = tf.get_variable("embedding", [vocab_size, size])  # size是wordembedding的维度
-            inputs = tf.nn.embedding_lookup(embedding,
-                                            self._input_data)  # 返回一个tensor，shape是(batch_size, num_steps, size)
+        with tf.device("/gpu:0"):
+            embedding = tf.get_variable("embedding", [vocab_size, size])  # size是word embedding的维度
+            inputs = tf.nn.embedding_lookup(embedding, self._input_data)  # 返回一个tensor，shape是(batch_size, num_steps, size)
 
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -32,9 +36,9 @@ class Model(object):
         state = self._initial_state
         with tf.variable_scope("RNN"):
             for time_step in range(num_steps):
-                if time_step > 0: tf.get_variable_scope().reuse_variables()
-                (cell_output, state) = cell(inputs[:, time_step, :],
-                                            state)  # inputs[:, time_step, :]的shape是(batch_size, size)
+                if time_step > 0:
+                    tf.get_variable_scope().reuse_variables()
+                (cell_output, state) = cell(inputs[:, time_step, :], state)  # inputs[:, time_step, :]的shape是(batch_size, size)
                 outputs.append(cell_output)
 
         output = tf.reshape(tf.concat(outputs, 1), [-1, size])

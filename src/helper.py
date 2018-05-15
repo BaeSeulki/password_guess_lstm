@@ -3,7 +3,7 @@ from collections import defaultdict
 import datetime
 
 
-def load_code_set(max_length, data_dir, max_vocab_size=2048):
+def load_code_set(max_length, data_dir):
     """
     get the init parameters from data
     """
@@ -22,16 +22,22 @@ def load_code_set(max_length, data_dir, max_vocab_size=2048):
             lines.append(line + (("⊥",) * (max_length - len(line))))
             data_size += 1
 
-    # np.random.shuffle(lines)
+    np.random.shuffle(lines)
 
-    import collections
-    counts = collections.Counter(char for line in lines for char in line)
+    from collections import Counter
+    # counts = Counter()
+    # for line in lines:
+    #     for char in line:
+    #         counts.update(Counter(char))
+    counts = Counter(char for line in lines for char in line)
+    # print(counts)
 
     char_to_idx = {}
     idx_to_char = {}
     inv_charmap = []
 
-    for char, count in counts.most_common(max_vocab_size - 1):
+    # sorted by char frequent
+    for char, count in counts.most_common():
         if char not in char_to_idx:
             char_to_idx[char] = len(inv_charmap)
             idx_to_char[len(inv_charmap)] = char
@@ -43,9 +49,9 @@ def load_code_set(max_length, data_dir, max_vocab_size=2048):
     print('loading code set cost time:{}'.format(datetime.datetime.now() - start_time))
     print(data_size)
     print(_vocab_size)
-    print(char_to_idx)
+    # print(char_to_idx)
     print(idx_to_char)
-    print(lines)
+    # print(lines)
     print(first_prob)
     return data_size, _vocab_size, char_to_idx, idx_to_char, lines, first_prob
 

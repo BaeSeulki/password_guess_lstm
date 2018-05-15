@@ -16,10 +16,9 @@ config_tf.gpu_options.allow_growth = True
 config_tf.inter_op_parallelism_threads = 1
 config_tf.intra_op_parallelism_threads = 1
 
-config = Config.Config()
+config = Config.Configs()
 data_dir = config.data_dir
-data_size, _vocab_size, char_to_idx, idx_to_char, lines, first_prob = \
-    helper.load_code_set(
+data_size, _vocab_size, char_to_idx, idx_to_char, lines, first_prob = helper.load_code_set(
         max_length=config.MAX_LEN,
         data_dir=data_dir
     )
@@ -61,10 +60,12 @@ def run_epoch(session, m, data, eval_op):
 
     costs = 0.0
     iters = 0
-    state = m.initial_state.eval()
-    for i in range(config.MAX_LEN - 1):
-        x = data[:, i:i + 1]
-        y = data[:, i + 1: i + 2]
+    # state = m.initial_state.eval()
+    state = tf.get_default_session().run(m.initial_state)
+    # for i in range(config.MAX_LEN - 1):
+    #     x = data[:, i:i + 1]
+    #     y = data[:, i + 1: i + 2]
+    for step, (x, y) in enumerate(data_iterator(data, m.batch_size, m.num_steps)):
         cost, state, _ = session.run([m.cost, m.final_state, eval_op],
                                      # x和y的shape都是(batch_size, num_steps)
                                      {m.input_data: x,
@@ -83,8 +84,7 @@ def run_epoch(session, m, data, eval_op):
 
 def main(_):
     with tf.Graph().as_default(), tf.Session(config=config_tf) as session:
-        initializer = tf.random_uniform_initializer(-config.init_scale,
-                                                    config.init_scale)
+        initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
         with tf.variable_scope("model", reuse=None, initializer=initializer):
             m = Model.Model(is_training=True, config=config)
 
@@ -110,7 +110,7 @@ def main(_):
             # if i % config.save_freq == config.save_freq-1:
             # print('model saving ...')
         model_saver.save(session, config.model_path +
-                         '_' + data_dir[data_dir.rfind('\\') + 1:-4] +
+                         '_' + data_dir[data_dir.rfind('/') + 1:-4] +
                          '_' + str(config.num_layers) +
                          '_' + str(config.hidden_size))
         # print('Done!')

@@ -11,7 +11,7 @@ config_tf.gpu_options.allow_growth = True
 config_tf.inter_op_parallelism_threads = 1
 config_tf.intra_op_parallelism_threads = 1
 
-config = Config.Config()
+config = Config.Configs()
 
 # char_to_idx, idx_to_char = p.load(open(config.model_path + '.voc', 'r'))
 char_to_idx, idx_to_char = p.load(open(config.model_path + '.voc', 'rb'))
@@ -26,7 +26,8 @@ start_sentence = config.start_sentence
 
 def run_epoch(session, m, data, eval_op, state=None):
     """Runs the model on the given data."""
-    x = data.reshape((1, 1))
+    x = np.array(data).reshape((1, 1))
+    # print(x)
     prob, _state, _ = session.run([m._prob, m.final_state, eval_op],
                                   {m.input_data: x,
                                    m.initial_state: state})
@@ -53,10 +54,16 @@ def main(_):
         if not is_beams:
             # sentence state
             char_list = list(start_sentence)
+            print(char_list)
             start_idx = char_to_idx[char_list[0]]
-            _state = mtest.initial_state.eval()
+            print(start_idx)
+            # _state = mtest.initial_state.eval()
+            _state = tf.get_default_session().run(mtest.initial_state)
             test_data = np.int32([start_idx])
+            print(test_data)
             prob, _state = run_epoch(session, mtest, test_data, tf.no_op(), _state)
+            # print(prob)
+            # print(_state)
             gen_res = [char_list[0]]
             for i in range(1, len(char_list)):
                 char = char_list[i]
@@ -66,6 +73,7 @@ def main(_):
                     char_index = np.argmax(prob.reshape(-1))
                 prob, _state = run_epoch(session, mtest, np.int32([char_index]), tf.no_op(), _state)
                 gen_res.append(char)
+            print(gen_res)
             # gen text
             if is_sample:
                 gen = np.random.choice(config.vocab_size, 1, p=prob.reshape(-1))
@@ -86,9 +94,10 @@ def main(_):
             print('Generated Result: ', ''.join(gen_res))
         else:
             # sentence state
-            char_list = list(start_sentence);
+            char_list = list(start_sentence)
             start_idx = char_to_idx[char_list[0]]
-            _state = mtest.initial_state.eval()
+            # _state = mtest.initial_state.eval()
+            _state = tf.get_default_session().run(mtest.initial_state)
             beams = [(0.0, [idx_to_char[start_idx]], idx_to_char[start_idx])]
             test_data = np.int32([start_idx])
             prob, _state = run_epoch(session, mtest, test_data, tf.no_op(), _state)

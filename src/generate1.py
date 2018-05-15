@@ -16,35 +16,39 @@ config_tf.gpu_options.allow_growth = True
 config_tf.inter_op_parallelism_threads = 1
 config_tf.intra_op_parallelism_threads = 1
 
-config = Config.Config()
+config = Config.Configs()
 threshold = config.threshold
 data_dir = config.data_dir
 char_to_idx, idx_to_char, first_prob = pickle.load(open(config.model_path + '.voc', 'rb'))
 
 config.vocab_size = len(char_to_idx)
-is_sample = config.is_sample
-is_beams = config.is_beams
-beam_size = config.beam_size
-len_of_generation = config.len_of_generation
-start_sentence = config.start_sentence
+# is_sample = config.is_sample
+# is_beams = config.is_beams
+# beam_size = config.beam_size
+# len_of_generation = config.len_of_generation
+# start_sentence = config.start_sentence
 
 
 def run_epoch(session, m, data, eval_op, state=None):
     """Runs the model on the given data."""
+    state = tf.get_default_session().run(m.initial_state)
     x = data.reshape((1, 1))
     prob, _state, _ = session.run([m._prob, m.final_state, eval_op],
                                   {m.input_data: x,
                                    m.initial_state: state})
     return prob, _state
 
+
 @fn_timer
 def get_pro(session, mtest, current_prefix):
     print(current_prefix)
-    _state = mtest.initial_state.eval()
+    prob = []
+    # _state = mtest.initial_state.eval()
     for c in current_prefix:
         test_data = np.array([char_to_idx[c]], dtype=np.int32)
-        prob, _state = run_epoch(session, mtest, test_data, tf.no_op(), _state)
-    del _state
+        # prob, _state = run_epoch(session, mtest, test_data, tf.no_op(), _state)
+        prob, _state = run_epoch(session, mtest, test_data, tf.no_op())
+    # del _state
     return prob[0]
 
 
@@ -57,22 +61,21 @@ def main(_):
             config.num_steps = 1
             # 以上两个参数决定了传入模型数值的size
 
-            initializer = tf.random_uniform_initializer(-config.init_scale,
-                                                        config.init_scale)
+            initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
             with tf.variable_scope("model", reuse=None, initializer=initializer):
                 mtest = Model.Model(is_training=False, config=config)
 
             # tf.global_variables_initializer().run()
 
-            start=datetime.datetime.now()
+            start = datetime.datetime.now()
             model_saver = tf.train.Saver()
             print('model loading ...')
             model_saver.restore(session, config.model_path +
-                                '-' + data_dir[data_dir.rfind('/') + 1:-4] +
-                                '-' + str(config.num_layers) +
-                                '-' + str(config.hidden_size))
+                                '_' + data_dir[data_dir.rfind('/') + 1:-4] +
+                                '_' + str(config.num_layers) +
+                                '_' + str(config.hidden_size))
             print('Done!')
-            print(datetime.datetime.now()-start)
+            print(datetime.datetime.now() - start)
 
             # initial prefix list and LUT
             sorted_first_prob = sorted(first_prob.items(), key=lambda x: x[1], reverse=True)
@@ -84,18 +87,16 @@ def main(_):
                 LUT[key] = value
             # initial prefix list and LUT
 
-
             # file operation
             f_id = 1
-            generate_path = config.dictionary_path + data_dir[data_dir.rfind('/') + 1:-4] + '-' + str(config.num_layers) + \
-                            '-' + str(config.hidden_size) + '/'
+            generate_path = config.dictionary_path + data_dir[data_dir.rfind('/') + 1:-4] + '_' + \
+                            str(config.num_layers) + '_' + str(config.hidden_size) + '/'
 
             if not os.path.exists(generate_path):
                 os.mkdir(generate_path)
             write_star = datetime.datetime.now()
             f = open(generate_path + str(f_id) + '.txt', 'w', encoding='utf-8')
             # file operation
-
 
             # initial variable
             code_num = 0

@@ -1,2 +1,6 @@
-model_checkpoint_path: "Model-17173-1-32"
-all_model_checkpoint_paths: "Model-17173-1-32"
+model_checkpoint_path: "Model-30"
+all_model_checkpoint_paths: "Model-10"
+all_model_checkpoint_paths: "Model-15"
+all_model_checkpoint_paths: "Model-20"
+all_model_checkpoint_paths: "Model-25"
+all_model_checkpoint_paths: "Model-30"

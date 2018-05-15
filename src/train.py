@@ -7,13 +7,14 @@ import tensorflow as tf
 
 from src import Config, Model
 
+config = Config.Configs()
 config_tf = tf.ConfigProto()
 config_tf.gpu_options.allow_growth = True
 config_tf.inter_op_parallelism_threads = 1
 config_tf.intra_op_parallelism_threads = 1
 
-file = sys.argv[1]
-# file = './data/mop.txt'
+# file = sys.argv[1]
+file = config.data_dir
 data = open(file, 'r').read()
 # data = data.decode('utf-8')
 chars = list(set(data))  # char vocabulary
@@ -23,10 +24,9 @@ print('data has %d characters, %d unique.' % (data_size, _vocab_size))
 char_to_idx = {ch: i for i, ch in enumerate(chars)}
 idx_to_char = {i: ch for i, ch in enumerate(chars)}
 
-config = Config.Config()
 config.vocab_size = _vocab_size
 
-p.dump((char_to_idx, idx_to_char), open(config.model_path + '.voc', 'w'), protocol=p.HIGHEST_PROTOCOL)
+p.dump((char_to_idx, idx_to_char), open(config.model_path + '.voc', 'wb'), protocol=p.HIGHEST_PROTOCOL)
 
 context_of_idx = [char_to_idx[ch] for ch in data]
 
@@ -57,7 +57,8 @@ def run_epoch(session, m, data, eval_op):
     start_time = time.time()
     costs = 0.0
     iters = 0
-    state = m.initial_state.eval()
+    # state = m.initial_state.eval()
+    state = tf.get_default_session().run(m.initial_state)
     for step, (x, y) in enumerate(data_iterator(data, m.batch_size,
                                                 m.num_steps)):
         cost, state, _ = session.run([m.cost, m.final_state, eval_op],  # x和y的shape都是(batch_size, num_steps)
