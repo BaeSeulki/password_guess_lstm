@@ -8,6 +8,7 @@ import tensorflow as tf
 from src import Config, Model
 
 config = Config.Configs()
+
 config_tf = tf.ConfigProto()
 config_tf.gpu_options.allow_growth = True
 config_tf.inter_op_parallelism_threads = 1
@@ -20,15 +21,20 @@ data = open(file, 'r').read()
 chars = list(set(data))  # char vocabulary
 
 data_size, _vocab_size = len(data), len(chars)
-print('data has %d characters, %d unique.' % (data_size, _vocab_size))
+print('Data has %d password strings, %d unique characters.' % (data_size, _vocab_size))
 char_to_idx = {ch: i for i, ch in enumerate(chars)}
 idx_to_char = {i: ch for i, ch in enumerate(chars)}
 
+print(char_to_idx)
+print(idx_to_char)
+
 config.vocab_size = _vocab_size
 
+# 字典保存到Model.voc
 p.dump((char_to_idx, idx_to_char), open(config.model_path + '.voc', 'wb'), protocol=p.HIGHEST_PROTOCOL)
 
 context_of_idx = [char_to_idx[ch] for ch in data]
+print(context_of_idx[0])
 
 
 def data_iterator(raw_data, batch_size, num_steps):

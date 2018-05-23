@@ -5,7 +5,7 @@ class Configs(object):
     # parameters for models
     init_scale = 0.04  # 均匀分布初始化的上下界值
     learning_rate = 0.001
-    max_grad_norm = 15  # 梯度规范化
+    max_grad_norm = 10 # 梯度规范化.最大范数
     num_layers = 1  # 定义多层lstm
     num_steps = 17  # number of steps to unroll the RNN 每次训练多少个字符
     hidden_size = 100  # size of hidden layer of neurons 输出向量ht的维度

@@ -1,4 +1,5 @@
 .idea/
+models/
 *.pyc
 src/__pycache__/*
 mop.txt
